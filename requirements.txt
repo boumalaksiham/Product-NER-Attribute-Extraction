@@ -1,0 +1,9 @@
+# Product NER — Dependencies
+# pip install -r requirements.txt
+
+"numpy<2"
+torch==2.2.2
+transformers==4.40.0
+seqeval==1.2.2
+pandas==2.2.2
+scikit-learn==1.4.2
