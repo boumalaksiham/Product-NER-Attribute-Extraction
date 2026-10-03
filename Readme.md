@@ -1,4 +1,9 @@
 # Product NER — Attribute Extraction from Product Titles
+
+## Evaluation scope
+
+The current script selects its checkpoint using the same small split evaluated every epoch. Its reported F1 is therefore a **validation/model-selection result**, not an untouched-test estimate. The final classification report currently evaluates the last epoch, which may differ from the saved best checkpoint. Retrain with distinct train, validation, and test sets and reload the selected checkpoint before publishing final test metrics. Curated examples do not establish performance on real product listings.
+
 ### Fine-tuned DistilBERT for Token Classification (BIO Tagging)
 
 > Built as part of an e-commerce ML portfolio targeting applied research roles at companies like eBay, Amazon, and Shopify.
@@ -216,8 +221,8 @@ product_ner/
 
 ### Installation
 ```bash
-git clone <repo-url>
-cd product_ner
+git clone https://github.com/boumalaksiham/Product-NER-Attribute-Extraction.git
+cd Product-NER-Attribute-Extraction
 
 python3 -m venv venv
 source venv/bin/activate       # Mac/Linux
