@@ -83,3 +83,5 @@ Historical entity-specific F1 values are not retained as independent test eviden
 Before publishing a final result, separate train/validation/test data by product, reload the best checkpoint, evaluate once on the test set, and save per-entity precision/recall/F1 plus support counts and representative errors. Also evaluate BIO consistency and long-title truncation.
 
 The modified training script passes Python syntax compilation. Training has not been rerun; existing artifacts predate this repair. Rerun training to generate the new selected-checkpoint validation report.
+
+Checkpoint-selection regression checks: `python -m unittest discover -s tests -v`. These execute the trainer’s selection/reload statements with controlled epoch scores, including zero-score ties and a best epoch before the final epoch. They passed without model downloads; they do not test learned-model quality.
