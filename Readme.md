@@ -38,9 +38,9 @@ The tokenizer aligns word-level annotations with subword tokens. Only the first 
 
 ## Training configuration
 
-`distilbert-base-uncased`; 64-token maximum; batch size 8; 20 epochs; learning rate 0.00003; dropout 0.1. A seed-42 split places **35 titles in training and 9 in validation**. The split seed does not fully control neural-training randomness.
+`distilbert-base-uncased`; 64-token maximum; batch size 8; 20 epochs; learning rate 0.00003; dropout 0.1. A seed-42 split places **35 titles in training and 9 in validation**. Python, NumPy, and PyTorch are seeded before model initialization and training. Determinism across different platforms and library versions is not guaranteed.
 
-The code names this split `test`, but repeatedly uses it for checkpoint selection. Its scores are validation results. The final printed classification report evaluates the last epoch and may differ from the saved best checkpoint; do not treat the two as interchangeable.
+This is a validation split used for checkpoint selection. The trainer now saves a checkpoint even when the first F1 is zero, reloads the best checkpoint before reporting, and writes `models/saved/validation_report.json` with counts, span metrics, and label sequences. There is still no independent final test set.
 
 ## Setup
 
@@ -81,3 +81,5 @@ The demo prints token predictions and extracted entities for example titles and 
 Historical entity-specific F1 values are not retained as independent test evidence. There is no untouched final test set or representative real-listing benchmark. Rare entities, unseen brands, punctuation, subword alignment, and labels absent from a split can materially affect results.
 
 Before publishing a final result, separate train/validation/test data by product, reload the best checkpoint, evaluate once on the test set, and save per-entity precision/recall/F1 plus support counts and representative errors. Also evaluate BIO consistency and long-title truncation.
+
+The modified training script passes Python syntax compilation. Training has not been rerun; existing artifacts predate this repair. Rerun training to generate the new selected-checkpoint validation report.

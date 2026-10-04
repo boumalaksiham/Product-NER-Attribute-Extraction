@@ -10,6 +10,7 @@ Usage:
 import os
 import sys
 import json
+import random
 import torch
 import torch.nn as nn
 import numpy as np
@@ -29,7 +30,7 @@ CONFIG = {
     "epochs": 20,
     "learning_rate": 3e-5,
     "dropout_rate": 0.1,
-    "test_size": 0.2,
+    "validation_size": 0.2,
     "random_state": 42,
 }
 
@@ -156,19 +157,22 @@ def main():
     print("PRODUCT NER — TRAINING")
     print("=" * 60)
 
+    random.seed(CONFIG["random_state"])
+    np.random.seed(CONFIG["random_state"])
+    torch.manual_seed(CONFIG["random_state"])
     device = torch.device("cpu")
 
     # 1. Labels
     label_to_id, id_to_label = get_label_maps(LABELED_SENTENCES)
     print(f"\nEntity labels ({len(label_to_id)}): {list(label_to_id.keys())}")
 
-    # 2. Train/test split
-    train_sents, test_sents = train_test_split(
+    # 2. Train/validation split
+    train_sents, validation_sents = train_test_split(
         LABELED_SENTENCES,
-        test_size=CONFIG["test_size"],
+        test_size=CONFIG["validation_size"],
         random_state=CONFIG["random_state"]
     )
-    print(f"Train: {len(train_sents)} | Test: {len(test_sents)}")
+    print(f"Train: {len(train_sents)} | Validation: {len(validation_sents)}")
 
     # 3. Tokenizer
     print(f"\nLoading tokenizer: {CONFIG['model_name']} ...")
@@ -176,9 +180,9 @@ def main():
 
     # 4. Datasets
     train_dataset = NERDataset(train_sents, label_to_id, tokenizer, CONFIG["max_length"])
-    test_dataset = NERDataset(test_sents, label_to_id, tokenizer, CONFIG["max_length"])
+    validation_dataset = NERDataset(validation_sents, label_to_id, tokenizer, CONFIG["max_length"])
     train_loader = DataLoader(train_dataset, batch_size=CONFIG["batch_size"], shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=CONFIG["batch_size"])
+    validation_loader = DataLoader(validation_dataset, batch_size=CONFIG["batch_size"])
 
     # 5. Model
     print("\nBuilding model...")
@@ -196,10 +200,10 @@ def main():
     print(f"\nTraining for {CONFIG['epochs']} epochs...")
     print("-" * 60)
 
-    best_f1 = 0.0
+    best_f1 = float("-inf")
     for epoch in range(1, CONFIG["epochs"] + 1):
         loss = train_epoch(model, train_loader, optimizer, device)
-        f1, _, _ = evaluate(model, test_loader, id_to_label, device)
+        f1, _, _ = evaluate(model, validation_loader, id_to_label, device)
         print(f"Epoch {epoch:>2}/{CONFIG['epochs']} | Loss: {loss:.4f} | F1: {f1:.4f}")
 
         if f1 > best_f1:
@@ -209,10 +213,18 @@ def main():
 
     print(f"\nBest F1: {best_f1:.4f}")
 
-    # 8. Final evaluation report
-    print("\nFinal Evaluation on Test Set:")
-    _, all_true, all_pred = evaluate(model, test_loader, id_to_label, device)
-    print(classification_report(all_true, all_pred))
+    model.load_state_dict(torch.load("models/saved/best_model.pt", map_location=device, weights_only=True))
+
+    # 8. Validation report for the saved checkpoint
+    print("\nBest-checkpoint evaluation on validation data:")
+    checkpoint_f1, all_true, all_pred = evaluate(model, validation_loader, id_to_label, device)
+    print(classification_report(all_true, all_pred, zero_division=0))
+    with open("models/saved/validation_report.json", "w") as f:
+        json.dump({"evaluation_role": "checkpoint_selection_validation",
+                   "train_count": len(train_sents), "validation_count": len(validation_sents),
+                   "seed": CONFIG["random_state"], "span_f1": checkpoint_f1,
+                   "classification_report": classification_report(all_true, all_pred, output_dict=True, zero_division=0),
+                   "true_labels": all_true, "predicted_labels": all_pred}, f, indent=2)
 
     # 9. Save artifacts
     tokenizer.save_pretrained("models/saved/tokenizer")
