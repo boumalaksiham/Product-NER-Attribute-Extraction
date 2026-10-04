@@ -2,6 +2,22 @@
 
 A named-entity recognition prototype for extracting structured attributes from product titles using BIO token labels and DistilBERT.
 
+## From a title to structured attributes
+
+The curated dataset includes `Apple iPhone 14 Pro 256GB Deep Purple Unlocked`, annotated as:
+
+| Attribute | Annotated span |
+|---|---|
+| Brand | Apple |
+| Model | iPhone 14 Pro |
+| Storage | 256GB |
+| Color | Deep Purple |
+| Network | Unlocked |
+
+This is a **labeling example**, not a claimed model prediction. It illustrates why token-level accuracy is insufficient: extracting only `Purple` misses part of the annotated color, even if most other tokens are correct.
+
+**Design choice:** use contextual token classification for variable-length spans and evaluate complete entity spans with seqeval. The small dataset makes annotation consistency, rare entity types, and subword alignment central to interpreting the result.
+
 ## Data and labels
 
 [data/dataset_builder.py](data/dataset_builder.py) contains **44 manually labeled titles**. BIO labels mark an entity's beginning (`B-`), continuation (`I-`), or non-entity tokens (`O`).
